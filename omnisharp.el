@@ -239,11 +239,15 @@ server backend."
       omnisharp-host
     (concat omnisharp-host "/")))
 
+(defun omnisharp-url-for (operation)
+  "Construct the URL to communicate with the server for the given OPERATION."
+  (concat (omnisharp-get-host) operation))
+
 (defun omnisharp-reload-solution ()
   "Reload the current solution."
   (interactive)
   (omnisharp-post-message-curl
-   (concat (omnisharp-get-host) "reloadsolution")
+   (omnisharp-url-for "reloadsolution")
    ;; no params needed
    nil))
 
@@ -252,7 +256,7 @@ server backend."
 argument, use another window."
   (interactive "P")
   (let* ((json-result (omnisharp-post-message-curl-as-json
-                       (concat (omnisharp-get-host) "gotodefinition")
+                       (omnisharp-url-for "gotodefinition")
                        (omnisharp--get-common-params)))
          (filename (cdr (assoc 'FileName json-result))))
     (if (null filename)
@@ -282,7 +286,7 @@ argument, use another window."
 (defun omnisharp-find-usages-worker (request)
   ;; TODO make this asyncronic like all other compilation processes!
   (let* ((quickfix-response (omnisharp-post-message-curl-as-json
-                             (concat (omnisharp-get-host) "findusages")
+                             (omnisharp-url-for "findusages")
                              request))
          (quickfixes (omnisharp--vector-to-list
                       (cdr (assoc 'QuickFixes quickfix-response)))))
@@ -306,7 +310,7 @@ to select one (or more) to jump to."
   "Returns a list of QuickFix lisp objects from a findimplementations
 api call made with the given Request."
   (let* ((quickfix-response (omnisharp-post-message-curl-as-json
-                             (concat (omnisharp-get-host) "findimplementations")
+                             (omnisharp-url-for "findimplementations")
                              request))
          (quickfixes (omnisharp--vector-to-list
                       (cdr (assoc 'QuickFixes quickfix-response)))))
@@ -319,7 +323,7 @@ use another window."
   (interactive "P")
   (let ((quickfix-response
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "gotoregion")
+          (omnisharp-url-for "gotoregion")
           (omnisharp--get-common-params))))
     (omnisharp--choose-and-go-to-quickfix-ido
      (cdr (assoc 'QuickFixes quickfix-response))
@@ -363,7 +367,7 @@ name to rename to, defaulting to the current name of the symbol."
 objects."
   (let* ((rename-responses
           (omnisharp-post-message-curl-as-json
-           (concat (omnisharp-get-host) "rename")
+           (omnisharp-url-for "rename")
            rename-request))
          (modified-files (omnisharp--vector-to-list
                           (cdr (assoc 'Changes rename-responses)))))
@@ -475,7 +479,7 @@ follow results to the locations in the actual files."
   "Stop the current omnisharp instance."
   (interactive)
   (omnisharp-post-message-curl
-   (concat (omnisharp-get-host) "stopserver")
+   (omnisharp-url-for "stopserver")
    nil))
 
 ;; TODO create omnisharp-add-to-solution that lets user choose which
@@ -503,7 +507,7 @@ follow results to the locations in the actual files."
   "TODO"
   ;; TODO report results somehow
   (omnisharp-post-message-curl
-   (concat (omnisharp-get-host) "addtoproject")
+   (omnisharp-url-for "addtoproject")
    params))
 
 (defun omnisharp-remove-from-project-current-file ()
@@ -528,7 +532,7 @@ solution."
 
 (defun omnisharp-remove-from-project-current-file-worker (params)
   (omnisharp-post-message-curl
-   (concat (omnisharp-get-host) "removefromproject")
+   (omnisharp-url-for "removefromproject")
    params))
 
 (defun omnisharp-add-reference ()
@@ -549,7 +553,7 @@ solution."
 
 (defun omnisharp-add-reference-worker (params)
   (omnisharp-post-message-curl-as-json
-   (concat (omnisharp-get-host) "addreference")
+   (omnisharp-url-for "addreference")
    params))
 
 (defun omnisharp-auto-complete ()
@@ -802,7 +806,7 @@ Returns the raw JSON result. Also caches that result as
 omnisharp--last-buffer-specific-auto-complete-result."
   (let ((json-result
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "autocomplete")
+          (omnisharp-url-for "autocomplete")
           auto-complete-request)))
     ;; Cache result so it may be juggled in different contexts easily
     (setq omnisharp--last-buffer-specific-auto-complete-result
@@ -817,7 +821,7 @@ omnisharp--last-buffer-specific-auto-complete-result."
   (let* ((json-result
           (omnisharp--vector-to-list
            (omnisharp-post-message-curl-as-json
-            (concat (omnisharp-get-host) "getoverridetargets")
+            (omnisharp-url-for "getoverridetargets")
             params)))
          (target-names
           (mapcar (lambda (a)
@@ -837,7 +841,7 @@ omnisharp--last-buffer-specific-auto-complete-result."
 
 (defun omnisharp-auto-complete-overrides-run-override-worker (params)
   (let ((json-result (omnisharp-post-message-curl-as-json
-                      (concat (omnisharp-get-host) "runoverridetarget")
+                      (omnisharp-url-for "runoverridetarget")
                       params)))
     (omnisharp--set-buffer-contents-to
      (cdr (assoc 'FileName json-result))
@@ -879,7 +883,7 @@ user is less likely to lose data."
   "Fetches and returns a GetCodeActionsResponse: the runnable
 refactoring code actions for the current file and position."
   (omnisharp-post-message-curl-as-json
-   (concat (omnisharp-get-host) "getcodeactions")
+   (omnisharp-url-for "getcodeactions")
    (omnisharp--get-common-params)))
 
 (defun omnisharp-run-code-action-refactoring-worker
@@ -890,7 +894,7 @@ refactoring code actions for the current file and position."
                 (omnisharp--get-common-params)))
          (json-run-action-result ; RunCodeActionsResponse
           (omnisharp-post-message-curl-as-json
-           (concat (omnisharp-get-host) "runcodeaction")
+           (omnisharp-url-for "runcodeaction")
            run-action-params)))
 
     (omnisharp-run-code-action-worker run-action-params
@@ -1299,7 +1303,7 @@ to insert the result in code, for example."
 PARAMS as a single human-readable string."
   (let ((json-result
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "typelookup")
+          (omnisharp-url-for "typelookup")
           params)))
     (cdr (assoc datatype json-result))))
 
@@ -1313,7 +1317,7 @@ ring."
 (defun omnisharp-get-build-command ()
   "Retrieve the shell command to build the current solution."
   (omnisharp-post-message-curl
-   (concat (omnisharp-get-host) "buildcommand")
+   (omnisharp-url-for "buildcommand")
    nil))
 
 (defun omnisharp-build-in-emacs ()
@@ -1394,7 +1398,7 @@ with the formatted result. Saves the file before starting."
                                      current-column)
   (let ((json-result
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "codeformat")
+          (omnisharp-url-for "codeformat")
           code-format-request)))
     (omnisharp--set-buffer-contents-to
      filename
@@ -1408,7 +1412,7 @@ with the formatted result. Saves the file before starting."
 (defun omnisharp-syntax-check-worker (params)
   "Takes a Request and returns a SyntaxErrorsResponse."
   (omnisharp-post-message-curl-as-json
-   (concat (omnisharp-get-host) "syntaxerrors")
+   (omnisharp-url-for "syntaxerrors")
    params))
 
 (defun omnisharp--flycheck-error-parser-raw-json
@@ -1451,7 +1455,7 @@ cursor at that location"
   (interactive)
   (condition-case nil
       (let* ((quickfixes (omnisharp-post-message-curl-as-json
-                          (concat (omnisharp-get-host) "currentfilemembersasflat")
+                          (omnisharp-url-for "currentfilemembersasflat")
                           (omnisharp--get-common-params)))
              (list-quickfixes (omnisharp--vector-to-list quickfixes))
              (imenu-list (mapcar (lambda (quickfix-alist)
@@ -1478,7 +1482,7 @@ selected member. With prefix argument, use another window."
 (defun omnisharp-navigate-to-current-file-member-worker
   (request &optional other-window)
   (let ((quickfixes (omnisharp-post-message-curl-as-json
-                     (concat (omnisharp-get-host) "currentfilemembersasflat")
+                     (omnisharp-url-for "currentfilemembersasflat")
                      request)))
     (omnisharp--choose-and-go-to-quickfix-ido
      quickfixes
@@ -1535,7 +1539,7 @@ ido-completing-read. Returns the chosen element."
 (defun omnisharp-navigate-to-type-in-current-file-worker (request)
   (let ((quickfixes
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "currentfiletopleveltypes")
+          (omnisharp-url-for "currentfiletopleveltypes")
           request)))
     (omnisharp--choose-and-go-to-quickfix-ido
      quickfixes)))
@@ -1546,7 +1550,7 @@ ido-completing-read. Returns the chosen element."
   (interactive "P")
   (let ((quickfix-response
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "findsymbols")
+          (omnisharp-url-for "findsymbols")
           nil)))
     (omnisharp--choose-and-go-to-quickfix-ido
      (omnisharp--vector-to-list
@@ -1570,7 +1574,7 @@ ido-completing-read. Returns the chosen element."
   "Return a QuickFixResponse containing a list of all locations of
 files in the current solution."
   (omnisharp-post-message-curl-as-json
-   (concat (omnisharp-get-host) "gotofile")
+   (omnisharp-url-for "gotofile")
    nil))
 
 (defun omnisharp--get-solution-files-list-of-strings ()
@@ -1604,7 +1608,7 @@ use another window."
   (interactive "P")
   (let ((quickfix-response
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "gotoregion")
+          (omnisharp-url-for "gotoregion")
           (omnisharp--get-common-params))))
     (omnisharp--choose-and-go-to-quickfix-ido
      (cdr (assoc 'QuickFixes quickfix-response))
@@ -1624,7 +1628,7 @@ current buffer. Use this in your csharp-mode hook."
   (interactive)
   (let ((quickfix-response
          (omnisharp-post-message-curl-as-json
-          (concat (omnisharp-get-host) "gotoregion")
+          (omnisharp-url-for "gotoregion")
           (omnisharp--get-common-params))))
     (omnisharp--choose-and-go-to-quickfix-ido
      (cdr (assoc 'QuickFixes quickfix-response)))))
