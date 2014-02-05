@@ -43,6 +43,12 @@ instance that works in the background."
   :group 'omnisharp
   :type 'string)
 
+(defcustom omnisharp-server-binary nil
+  "Path to the OmniSharp server binary. If nil, the server won't
+be spawned automatically."
+  :group 'omnisharp
+  :type 'string)
+
 (defcustom omnisharp-timeout 1
   "Timeout, in seconds, after which to abort stalling queries to the
 OmniSharp server."
